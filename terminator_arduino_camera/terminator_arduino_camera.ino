@@ -1,6 +1,13 @@
 
 #include <ros.h>
 #include <geometry_msgs/Point.h>
+#include <Servo.h> 
+ 
+#define PAN_PIN  4
+#define TILT_PIN 5
+
+Servo panServo;  
+Servo tiltServo;  
 
 ros::NodeHandle  nh;
 
@@ -21,7 +28,7 @@ void stopMotors(void)
     }
 }
 
-void messageCb( const geometry_msgs::Point& cmd_msg){
+void motorCb( const geometry_msgs::Point& cmd_msg){
   if( (cmd_msg.x == 0) && (cmd_msg.y == 0) ) {
     stopMotors();
     return;
@@ -43,7 +50,16 @@ void messageCb( const geometry_msgs::Point& cmd_msg){
   return;
 }
 
-ros::Subscriber<geometry_msgs::Point> sub("motor_cmd", messageCb );
+void cameraCb( const geometry_msgs::Point& cmd_msg){
+  // figure out limits,
+  // calibrate so that commands are 
+  // angle degrees
+  panServo.write(cmd_msg.x);  // pan
+  tiltServo.write(cmd_msg.y);  // tilt
+}
+
+ros::Subscriber<geometry_msgs::Point> subMotor("motor_cmd", motorCb );
+ros::Subscriber<geometry_msgs::Point> subCamera("camera_cmd", cameraCb );
 
 void setup() 
 { 
@@ -54,7 +70,12 @@ void setup()
     pinMode(brake[i], OUTPUT);
   }
   nh.initNode();
-  nh.subscribe(sub);
+  nh.subscribe(subMotor);
+  nh.subscribe(subCamera);
+  panServo.attach(PAN_PIN);  // attaches the servo on pin 9 to the servo object 
+  tiltServo.attach(TILT_PIN);  // attaches the servo on pin 9 to the servo object 
+  panServo.write(0);
+  tiltServo.write(0);
 } 
 void loop() 
 {
