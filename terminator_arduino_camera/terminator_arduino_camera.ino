@@ -8,6 +8,15 @@
 
 Servo panServo;  
 Servo tiltServo;  
+int panPosition = 90; 
+int tiltPosition = 105;
+
+#define PAN_LIMIT_LEFT -70
+#define PAN_LIMIT_RIGHT 60
+#define TILT_LIMIT_UP 40
+#define TILT_LIMIT_DOWN -70
+#define PAN_CENTER 90
+#define TILT_CENTER 105
 
 ros::NodeHandle  nh;
 
@@ -18,7 +27,6 @@ int cur[] = {0,1};
 int DIR_FWD[] = {LOW,HIGH};
 int DIR_REV[] = {HIGH,LOW};
 int loopCount = 0;
-
 
 void stopMotors(void) 
 {
@@ -51,15 +59,25 @@ void motorCb( const geometry_msgs::Point& cmd_msg){
 }
 
 void cameraCb( const geometry_msgs::Point& cmd_msg){
-  // figure out limits,
-  // calibrate so that commands are 
-  // angle degrees
-  panServo.write(cmd_msg.x);  // pan
-  tiltServo.write(cmd_msg.y);  // tilt
-}
-
+  int pan = cmd_msg.x;
+  int tilt = cmd_msg.y;
+  
+  if( pan < PAN_LIMIT_LEFT) {
+    pan = PAN_LIMIT_LEFT;
+  } else if(pan > PAN_LIMIT_RIGHT) {
+    pan = PAN_LIMIT_RIGHT;
+  }
+  if( tilt < TILT_LIMIT_DOWN) {
+    tilt = TILT_LIMIT_DOWN;
+  } else if(tilt > TILT_LIMIT_UP) {
+    tilt = TILT_LIMIT_UP;
+  }
+  panServo.write(pan + PAN_CENTER);
+  tiltServo.write(tilt + TILT_CENTER);
+}             
+                          
 ros::Subscriber<geometry_msgs::Point> subMotor("motor_cmd", motorCb );
-ros::Subscriber<geometry_msgs::Point> subCamera("camera_cmd", cameraCb );
+ros::Subscriber<geometry_msgs::Point> subCamera("cam_pt_cmd", cameraCb );
 
 void setup() 
 { 
@@ -74,8 +92,8 @@ void setup()
   nh.subscribe(subCamera);
   panServo.attach(PAN_PIN);  // attaches the servo on pin 9 to the servo object 
   tiltServo.attach(TILT_PIN);  // attaches the servo on pin 9 to the servo object 
-  panServo.write(0);
-  tiltServo.write(0);
+  panServo.write(panPosition);
+  tiltServo.write(tiltPosition);
 } 
 void loop() 
 {
